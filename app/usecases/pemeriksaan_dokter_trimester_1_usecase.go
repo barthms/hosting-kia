@@ -55,7 +55,6 @@
 // // 	return u.repo.FindMineByUserID(userID)
 // // }
 
-
 // package usecases
 
 // import (
@@ -355,64 +354,64 @@
 package usecases
 
 import (
-    "errors"
-    "monitoring-service/app/models"
-    "monitoring-service/app/repositories"
+	"errors"
+	"monitoring-service/app/models"
+	"monitoring-service/app/repositories"
 )
 
 type PemeriksaanDokterTrimester1Usecase interface {
-    Create(p *models.PemeriksaanDokterTrimester1) error
-    GetByID(id int32) (*models.PemeriksaanDokterTrimester1, error)
-    GetMine(userID int32) (*models.PemeriksaanDokterTrimester1, error)
-    GetAllMine(userID int32) ([]models.PemeriksaanDokterTrimester1, error)
-    GetByKehamilanID(kehamilanID int32) ([]models.PemeriksaanDokterTrimester1, error)
-    Update(id int32, p *models.PemeriksaanDokterTrimester1) error // DIUBAH
-    Delete(id int32) error
+	Create(p *models.PemeriksaanDokterTrimester1) error
+	GetByID(id int32) (*models.PemeriksaanDokterTrimester1, error)
+	GetMine(userID int32) (*models.PemeriksaanDokterTrimester1, error)
+	GetAllMine(userID int32) ([]models.PemeriksaanDokterTrimester1, error)
+	GetByKehamilanID(kehamilanID int32) ([]models.PemeriksaanDokterTrimester1, error)
+	Update(id int32, p *models.PemeriksaanDokterTrimester1) error // DIUBAH
+	Delete(id int32) error
 }
 
 type pemeriksaanDokterTrimester1Usecase struct {
-    repo    *repositories.PemeriksaanDokterTrimester1Repository
-    labRepo *repositories.PemeriksaanLaboratoriumJiwaRepository // DITAMBAHKAN
+	repo    *repositories.PemeriksaanDokterTrimester1Repository
+	labRepo *repositories.PemeriksaanLaboratoriumJiwaRepository // DITAMBAHKAN
 }
 
 // DIUBAH: Menambahkan parameter labRepo agar cocok dengan init.go
 func NewPemeriksaanDokterTrimester1Usecase(repo *repositories.PemeriksaanDokterTrimester1Repository, labRepo *repositories.PemeriksaanLaboratoriumJiwaRepository) PemeriksaanDokterTrimester1Usecase {
-    return &pemeriksaanDokterTrimester1Usecase{repo: repo, labRepo: labRepo}
+	return &pemeriksaanDokterTrimester1Usecase{repo: repo, labRepo: labRepo}
 }
 
 func (u *pemeriksaanDokterTrimester1Usecase) Create(p *models.PemeriksaanDokterTrimester1) error {
-    if p.KehamilanID == 0 {
-        return errors.New("kehamilan_id wajib diisi")
-    }
-    return u.repo.Create(p)
+	if p.KehamilanID == 0 {
+		return errors.New("kehamilan_id wajib diisi")
+	}
+	return u.repo.Create(p)
 }
 
 func (u *pemeriksaanDokterTrimester1Usecase) GetByID(id int32) (*models.PemeriksaanDokterTrimester1, error) {
-    return u.repo.FindByID(id)
+	return u.repo.FindByID(id)
 }
 
 func (u *pemeriksaanDokterTrimester1Usecase) GetByKehamilanID(kehamilanID int32) ([]models.PemeriksaanDokterTrimester1, error) {
-    return u.repo.FindByKehamilanID(kehamilanID)
+	return u.repo.FindByKehamilanID(kehamilanID)
 }
 
 // DIUBAH: Logic disesuaikan dengan parameter id
 func (u *pemeriksaanDokterTrimester1Usecase) Update(id int32, p *models.PemeriksaanDokterTrimester1) error {
-    _, err := u.repo.FindByID(id)
-    if err != nil {
-        return errors.New("data pemeriksaan dokter trimester 1 tidak ditemukan")
-    }
-    p.ID = id
-    return u.repo.Update(p)
+	_, err := u.repo.FindByID(id)
+	if err != nil {
+		return errors.New("data pemeriksaan dokter trimester 1 tidak ditemukan")
+	}
+	p.ID = id
+	return u.repo.Update(p)
 }
 
 func (u *pemeriksaanDokterTrimester1Usecase) Delete(id int32) error {
-    return u.repo.Delete(id)
+	return u.repo.Delete(id)
 }
 
 func (u *pemeriksaanDokterTrimester1Usecase) GetMine(userID int32) (*models.PemeriksaanDokterTrimester1, error) {
-    return u.repo.FindMineByUserID(userID)
+	return u.repo.FindMineByUserID(userID)
 }
 
 func (u *pemeriksaanDokterTrimester1Usecase) GetAllMine(userID int32) ([]models.PemeriksaanDokterTrimester1, error) {
-    return u.repo.FindAllMineByUserID(userID)
+	return u.repo.FindAllMineByUserID(userID)
 }

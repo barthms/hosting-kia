@@ -107,34 +107,34 @@ func (c *SkriningPreeklampsiaController) Update(ctx echo.Context) error {
 	if err := ctx.Bind(&req); err != nil {
 		return ctx.JSON(http.StatusBadRequest, models.Response{StatusCode: http.StatusBadRequest, Message: err.Error()})
 	}
-	existing, err := c.usecase.GetByID(int32(id))
-	if err != nil {
-		return ctx.JSON(http.StatusNotFound, models.Response{StatusCode: http.StatusNotFound, Message: "Data tidak ditemukan"})
+
+	// Langsung build struct tanpa GetByID yang menyentuh tabel kehamilan
+	s := &models.SkriningPreeklampsia{
+		ID:                                   int32(id),
+		KehamilanID:                          req.KehamilanID,
+		AnamnesisMultiparaPasanganBaruSedang: req.AnamnesisMultiparaPasanganBaruSedang,
+		AnamnesisTeknologiReproduksiBerbantuSedang:   req.AnamnesisTeknologiReproduksiBerbantuSedang,
+		AnamnesisUmurDiatas35TahunSedang:             req.AnamnesisUmurDiatas35TahunSedang,
+		AnamnesisNuliparaSedang:                      req.AnamnesisNuliparaSedang,
+		AnamnesisJarakKehamilanDiatas10TahunSedang:   req.AnamnesisJarakKehamilanDiatas10TahunSedang,
+		AnamnesisRiwayatPreeklampsiaKeluargaSedang:   req.AnamnesisRiwayatPreeklampsiaKeluargaSedang,
+		AnamnesisObesitasIMTDiatas30Sedang:           req.AnamnesisObesitasIMTDiatas30Sedang,
+		AnamnesisRiwayatPreeklampsiaSebelumnyaTinggi: req.AnamnesisRiwayatPreeklampsiaSebelumnyaTinggi,
+		AnamnesisKehamilanMultipelTinggi:             req.AnamnesisKehamilanMultipelTinggi,
+		AnamnesisDiabetesDalamKehamilanTinggi:        req.AnamnesisDiabetesDalamKehamilanTinggi,
+		AnamnesisHipertensiKronikTinggi:              req.AnamnesisHipertensiKronikTinggi,
+		AnamnesisPenyakitGinjalTinggi:                req.AnamnesisPenyakitGinjalTinggi,
+		AnamnesisPenyakitAutoimunSLETinggi:           req.AnamnesisPenyakitAutoimunSLETinggi,
+		AnamnesisAntiPhospholipidSyndromeTinggi:      req.AnamnesisAntiPhospholipidSyndromeTinggi,
+		FisikMAPDiatas90mmHg:                         req.FisikMAPDiatas90mmHg,
+		FisikProteinuriaUrinCelup:                    req.FisikProteinuriaUrinCelup,
+		KesimpulanSkriningPreeklampsia:               req.KesimpulanSkriningPreeklampsia,
 	}
-	// Update boolean fields (langsung assign)
-	existing.AnamnesisMultiparaPasanganBaruSedang = req.AnamnesisMultiparaPasanganBaruSedang
-	existing.AnamnesisTeknologiReproduksiBerbantuSedang = req.AnamnesisTeknologiReproduksiBerbantuSedang
-	existing.AnamnesisUmurDiatas35TahunSedang = req.AnamnesisUmurDiatas35TahunSedang
-	existing.AnamnesisNuliparaSedang = req.AnamnesisNuliparaSedang
-	existing.AnamnesisJarakKehamilanDiatas10TahunSedang = req.AnamnesisJarakKehamilanDiatas10TahunSedang
-	existing.AnamnesisRiwayatPreeklampsiaKeluargaSedang = req.AnamnesisRiwayatPreeklampsiaKeluargaSedang
-	existing.AnamnesisObesitasIMTDiatas30Sedang = req.AnamnesisObesitasIMTDiatas30Sedang
-	existing.AnamnesisRiwayatPreeklampsiaSebelumnyaTinggi = req.AnamnesisRiwayatPreeklampsiaSebelumnyaTinggi
-	existing.AnamnesisKehamilanMultipelTinggi = req.AnamnesisKehamilanMultipelTinggi
-	existing.AnamnesisDiabetesDalamKehamilanTinggi = req.AnamnesisDiabetesDalamKehamilanTinggi
-	existing.AnamnesisHipertensiKronikTinggi = req.AnamnesisHipertensiKronikTinggi
-	existing.AnamnesisPenyakitGinjalTinggi = req.AnamnesisPenyakitGinjalTinggi
-	existing.AnamnesisPenyakitAutoimunSLETinggi = req.AnamnesisPenyakitAutoimunSLETinggi
-	existing.AnamnesisAntiPhospholipidSyndromeTinggi = req.AnamnesisAntiPhospholipidSyndromeTinggi
-	existing.FisikMAPDiatas90mmHg = req.FisikMAPDiatas90mmHg
-	existing.FisikProteinuriaUrinCelup = req.FisikProteinuriaUrinCelup
-	if req.KesimpulanSkriningPreeklampsia != "" {
-		existing.KesimpulanSkriningPreeklampsia = req.KesimpulanSkriningPreeklampsia
-	}
-	if err := c.usecase.Update(existing); err != nil {
+
+	if err := c.usecase.Update(s); err != nil {
 		return ctx.JSON(http.StatusInternalServerError, models.Response{StatusCode: http.StatusInternalServerError, Message: err.Error()})
 	}
-	return ctx.JSON(http.StatusOK, models.Response{StatusCode: http.StatusOK, Data: existing})
+	return ctx.JSON(http.StatusOK, models.Response{StatusCode: http.StatusOK, Data: s})
 }
 
 func (c *SkriningPreeklampsiaController) Delete(ctx echo.Context) error {
@@ -147,7 +147,6 @@ func (c *SkriningPreeklampsiaController) Delete(ctx echo.Context) error {
 	}
 	return ctx.JSON(http.StatusOK, models.Response{StatusCode: http.StatusOK, Message: "deleted"})
 }
-
 
 // MODUL IBU
 func (c *SkriningPreeklampsiaController) GetByIDForOrangtua(ctx echo.Context) error {

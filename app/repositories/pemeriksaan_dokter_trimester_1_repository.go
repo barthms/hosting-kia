@@ -1,68 +1,3 @@
-// package repositories
-
-// import (
-// 	"errors"
-// 	"monitoring-service/app/models"
-
-// 	"gorm.io/gorm"
-// )
-
-// type PemeriksaanDokterTrimester1Repository struct {
-// 	db *gorm.DB
-// }
-
-// func NewPemeriksaanDokterTrimester1Repository(db *gorm.DB) *PemeriksaanDokterTrimester1Repository {
-// 	return &PemeriksaanDokterTrimester1Repository{db: db}
-// }
-
-// func (r *PemeriksaanDokterTrimester1Repository) Create(p *models.PemeriksaanDokterTrimester1) error {
-// 	return r.db.Create(p).Error
-// }
-
-// func (r *PemeriksaanDokterTrimester1Repository) FindByID(id int32) (*models.PemeriksaanDokterTrimester1, error) {
-// 	var p models.PemeriksaanDokterTrimester1
-// 	err := r.db.Preload("Kehamilan.Ibu.Kependudukan").First(&p, id).Error
-// 	return &p, err
-// }
-
-// func (r *PemeriksaanDokterTrimester1Repository) FindByKehamilanID(kehamilanID int32) ([]models.PemeriksaanDokterTrimester1, error) {
-// 	var list []models.PemeriksaanDokterTrimester1
-// 	err := r.db.Where("kehamilan_id = ?", kehamilanID).Find(&list).Error
-// 	return list, err
-// }
-
-// func (r *PemeriksaanDokterTrimester1Repository) Update(p *models.PemeriksaanDokterTrimester1) error {
-// 	return r.db.Save(p).Error
-// }
-
-// func (r *PemeriksaanDokterTrimester1Repository) Delete(id int32) error {
-// 	result := r.db.Delete(&models.PemeriksaanDokterTrimester1{}, id)
-// 	if result.Error != nil {
-// 		return result.Error
-// 	}
-// 	if result.RowsAffected == 0 {
-// 		return errors.New("data pemeriksaan dokter trimester 1 tidak ditemukan")
-// 	}
-// 	return nil
-// }
-
-// // MODUL IBU
-// func (r *PemeriksaanDokterTrimester1Repository) FindMineByUserID(userID int32) (*models.PemeriksaanDokterTrimester1, error) {
-// 	var data models.PemeriksaanDokterTrimester1
-
-// 	err := r.db.
-// 		Table("pemeriksaan_dokter_trimester_1 p").
-// 		Joins("JOIN kehamilan k ON k.id = p.kehamilan_id").
-// 		Joins("JOIN ibu i ON i.id = k.ibu_id").
-// 		Joins("JOIN penduduk pd ON pd.id = i.penduduk_id").
-// 		Joins("JOIN pengguna u ON u.penduduk_id = pd.id").
-// 		Where("u.id = ?", userID).
-// 		Order("p.tanggal_periksa DESC").
-// 		First(&data).Error
-
-// 	return &data, err
-// }
-
 package repositories
 
 import (
@@ -80,10 +15,12 @@ func NewPemeriksaanDokterTrimester1Repository(db *gorm.DB) *PemeriksaanDokterTri
 	return &PemeriksaanDokterTrimester1Repository{db: db}
 }
 
+// ── Create (single record) ─────────────────────────────────────────────
 func (r *PemeriksaanDokterTrimester1Repository) Create(dokter *models.PemeriksaanDokterTrimester1) error {
 	return r.db.Create(dokter).Error
 }
 
+// ── CreateWithLab (transaksi dokter + lab) ─────────────────────────────
 func (r *PemeriksaanDokterTrimester1Repository) CreateWithLab(dokter *models.PemeriksaanDokterTrimester1, lab *models.PemeriksaanLaboratoriumJiwa) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(dokter).Error; err != nil {
@@ -100,9 +37,10 @@ func (r *PemeriksaanDokterTrimester1Repository) CreateWithLab(dokter *models.Pem
 	})
 }
 
+// ── UpdateWithLab (transaksi update dokter + lab) ─────────────────────
 func (r *PemeriksaanDokterTrimester1Repository) UpdateWithLab(dokterID int32, dokter *models.PemeriksaanDokterTrimester1, lab *models.PemeriksaanLaboratoriumJiwa) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Model(&models.PemeriksaanDokterTrimester1{}).Where("id = ?", dokterID).Updates(dokter).Error; err != nil {
+		if err := tx.Model(&models.PemeriksaanDokterTrimester1{}).Where("id_trimester1 = ?", dokterID).Updates(dokter).Error; err != nil {
 			return err
 		}
 		if lab != nil {
@@ -126,74 +64,67 @@ func (r *PemeriksaanDokterTrimester1Repository) UpdateWithLab(dokterID int32, do
 	})
 }
 
-func (r *PemeriksaanDokterTrimester1Repository) GetByID(id int32) (*models.PemeriksaanDokterTrimester1, error) {
+// ── FindByID (digunakan usecase) ─────────────────────────────────────
+func (r *PemeriksaanDokterTrimester1Repository) FindByID(id int32) (*models.PemeriksaanDokterTrimester1, error) {
 	var data models.PemeriksaanDokterTrimester1
-	err := r.db.First(&data, id).Error
+	// kolom primary key adalah id_trimester1
+	err := r.db.Where("id_trimester1 = ?", id).First(&data).Error
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("data pemeriksaan dokter trimester 1 tidak ditemukan")
+		}
 		return nil, err
 	}
 	return &data, nil
 }
 
-func (r *PemeriksaanDokterTrimester1Repository) GetByKehamilanID(kehamilanID int32) ([]models.PemeriksaanDokterTrimester1, error) {
+// ── FindByKehamilanID (digunakan usecase) ────────────────────────────
+func (r *PemeriksaanDokterTrimester1Repository) FindByKehamilanID(kehamilanID int32) ([]models.PemeriksaanDokterTrimester1, error) {
 	var list []models.PemeriksaanDokterTrimester1
 	err := r.db.Where("kehamilan_id = ?", kehamilanID).Order("tanggal_periksa DESC").Find(&list).Error
 	return list, err
 }
 
+// ── Update biasa (single) ─────────────────────────────────────────────
 func (r *PemeriksaanDokterTrimester1Repository) Update(dokter *models.PemeriksaanDokterTrimester1) error {
+	// Save akan mengupdate semua field berdasarkan primary key
 	return r.db.Save(dokter).Error
 }
 
+// ── Delete ─────────────────────────────────────────────────────────────
 func (r *PemeriksaanDokterTrimester1Repository) Delete(id int32) error {
 	result := r.db.Delete(&models.PemeriksaanDokterTrimester1{}, id)
 	if result.RowsAffected == 0 {
-		return errors.New("data tidak ditemukan")
+		return errors.New("data pemeriksaan dokter trimester 1 tidak ditemukan")
 	}
 	return result.Error
 }
 
-// MODUL IBU - return single (existing, tetap dipakai GetMine lama)
+// ── MODUL IBU ──────────────────────────────────────────────────────────
 func (r *PemeriksaanDokterTrimester1Repository) FindMineByUserID(userID int32) (*models.PemeriksaanDokterTrimester1, error) {
 	var data models.PemeriksaanDokterTrimester1
-
 	err := r.db.
 		Table("pemeriksaan_dokter_trimester_1 p").
 		Joins("JOIN kehamilan k ON k.id = p.kehamilan_id").
 		Joins("JOIN ibu i ON i.id = k.ibu_id").
 		Joins("JOIN penduduk pd ON pd.id = i.penduduk_id").
-		Joins("JOIN pengguna u ON u.id = pd.id").
+		Joins("JOIN pengguna u ON u.penduduk_id = pd.id").
 		Where("u.id = ?", userID).
 		Order("p.tanggal_periksa DESC").
 		First(&data).Error
-
 	return &data, err
 }
 
-// MODUL IBU - return list (BARU: digunakan untuk tampilkan semua kunjungan)
 func (r *PemeriksaanDokterTrimester1Repository) FindAllMineByUserID(userID int32) ([]models.PemeriksaanDokterTrimester1, error) {
 	var list []models.PemeriksaanDokterTrimester1
-
 	err := r.db.
 		Table("pemeriksaan_dokter_trimester_1 p").
 		Joins("JOIN kehamilan k ON k.id = p.kehamilan_id").
 		Joins("JOIN ibu i ON i.id = k.ibu_id").
 		Joins("JOIN penduduk pd ON pd.id = i.penduduk_id").
-		Joins("JOIN pengguna u ON u.id = pd.id").
+		Joins("JOIN pengguna u ON u.penduduk_id = pd.id").
 		Where("u.id = ?", userID).
 		Order("p.tanggal_periksa DESC").
 		Find(&list).Error
-
 	return list, err
-}
-
-// COBA DULU
-func (r *PemeriksaanDokterTrimester1Repository) FindByID(id int32) (*models.PemeriksaanDokterTrimester1, error) {
-	// TODO: Implementasi DB Find By ID
-	return nil, nil
-}
-
-func (r *PemeriksaanDokterTrimester1Repository) FindByKehamilanID(kehamilanID int32) ([]models.PemeriksaanDokterTrimester1, error) {
-	// TODO: Implementasi DB Find By Kehamilan ID
-	return nil, nil
 }

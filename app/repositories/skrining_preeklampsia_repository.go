@@ -32,7 +32,25 @@ func (r *SkriningPreeklampsiaRepository) FindByKehamilanID(kehamilanID int32) ([
 }
 
 func (r *SkriningPreeklampsiaRepository) Update(s *models.SkriningPreeklampsia) error {
-	return r.db.Save(s).Error
+	return r.db.Model(s).Updates(map[string]interface{}{
+		"anamnesis_multipara_pasangan_baru_sedang":         s.AnamnesisMultiparaPasanganBaruSedang,
+		"anamnesis_teknologi_reproduksi_berbantu_sedang":   s.AnamnesisTeknologiReproduksiBerbantuSedang,
+		"anamnesis_umur_diatas35_tahun_sedang":             s.AnamnesisUmurDiatas35TahunSedang,
+		"anamnesis_nulipara_sedang":                        s.AnamnesisNuliparaSedang,
+		"anamnesis_jarak_kehamilan_diatas10_tahun_sedang":  s.AnamnesisJarakKehamilanDiatas10TahunSedang,
+		"anamnesis_riwayat_preeklampsia_keluarga_sedang":   s.AnamnesisRiwayatPreeklampsiaKeluargaSedang,
+		"anamnesis_obesitas_imt_diatas30_sedang":           s.AnamnesisObesitasIMTDiatas30Sedang,
+		"anamnesis_riwayat_preeklampsia_sebelumnya_tinggi": s.AnamnesisRiwayatPreeklampsiaSebelumnyaTinggi,
+		"anamnesis_kehamilan_multipel_tinggi":              s.AnamnesisKehamilanMultipelTinggi,
+		"anamnesis_diabetes_dalam_kehamilan_tinggi":        s.AnamnesisDiabetesDalamKehamilanTinggi,
+		"anamnesis_hipertensi_kronik_tinggi":               s.AnamnesisHipertensiKronikTinggi,
+		"anamnesis_penyakit_ginjal_tinggi":                 s.AnamnesisPenyakitGinjalTinggi,
+		"anamnesis_penyakit_autoimun_sle_tinggi":           s.AnamnesisPenyakitAutoimunSLETinggi,
+		"anamnesis_anti_phospholipid_syndrome_tinggi":      s.AnamnesisAntiPhospholipidSyndromeTinggi,
+		"fisik_map_diatas90mm_hg":                          s.FisikMAPDiatas90mmHg,
+		"fisik_proteinuria_urin_celup":                     s.FisikProteinuriaUrinCelup,
+		"kesimpulan_skrining_preeklampsia":                 s.KesimpulanSkriningPreeklampsia,
+	}).Error
 }
 
 func (r *SkriningPreeklampsiaRepository) Delete(id int32) error {

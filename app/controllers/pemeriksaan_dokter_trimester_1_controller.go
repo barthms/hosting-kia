@@ -753,7 +753,7 @@ func (c *PemeriksaanDokterTrimester1Controller) Update(ctx echo.Context) error {
 			existing.TanggalPeriksa = &t
 		}
 	}
-	if err := c.usecase.Update(int32(id),existing); err != nil {
+	if err := c.usecase.Update(int32(id), existing); err != nil {
 		return ctx.JSON(http.StatusInternalServerError, models.Response{StatusCode: http.StatusInternalServerError, Message: err.Error()})
 	}
 	return ctx.JSON(http.StatusOK, models.Response{StatusCode: http.StatusOK, Data: existing})
