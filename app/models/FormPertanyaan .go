@@ -36,6 +36,7 @@ type AddRiskRuleRequest struct {
     Kondisi        map[string]interface{} `json:"kondisi" validate:"required"`
     KategoriRisiko string                 `json:"kategori_risiko" validate:"required"`
     Prioritas      int                    `json:"prioritas"`
+    Rekomendasi     string                 `json:"rekomendasi"`
 }
 
 type UpdateRiskRuleRequest struct {
@@ -43,6 +44,7 @@ type UpdateRiskRuleRequest struct {
     Kondisi        map[string]interface{} `json:"kondisi"`
     KategoriRisiko string                 `json:"kategori_risiko"`
     Prioritas      int                    `json:"prioritas"`
+    Rekomendasi     string                 `json:"rekomendasi"`
 }
 
     type CreateFormVersionRequest struct {

@@ -34,13 +34,7 @@ type FormRepository interface {
     DeleteRiskRule(ctx context.Context, id uint) error
 }
 
-type PemeriksaanRepository interface {
-    CreatePemeriksaan(ctx context.Context, p *models.Pemeriksaan) error
-    GetRiwayatByPenduduk(ctx context.Context, pendudukID uint, kelompok string) ([]models.Pemeriksaan, error)
-    GetPemeriksaanByID(ctx context.Context, id uint) (*models.Pemeriksaan, error)
-    GetPendudukByID(ctx context.Context, id uint) (*models.Kependudukan, error)
-    GetUserByID(ctx context.Context, id uint) (*models.User, error)
-}
+
 
 
 type formRepository struct {
@@ -50,6 +44,13 @@ type formRepository struct {
 func NewFormRepository(db *gorm.DB) FormRepository {
     return &formRepository{db: db}
 }
+
+// di repositories/pemeriksaan.go
+
+// GetLatestRiskCountByPendudukIDs menghitung jumlah penduduk dengan kategori risiko terbaru per kelompok
+// Asumsi: untuk setiap penduduk, ambil pemeriksaan terbaru, lalu hitung berdasarkan kategori_risiko
+// GetLatestRiskCountByPendudukIDs menghitung jumlah penduduk dengan kategori risiko terbaru per kelompok
+
 
 // ---- FormVersi ----
 func (r *formRepository) CreateFormVersion(ctx context.Context, versi *models.FormVersi) error {
@@ -156,53 +157,4 @@ func (r *formRepository) UpdateRiskRule(ctx context.Context, rule *models.FormAt
 
 func (r *formRepository) DeleteRiskRule(ctx context.Context, id uint) error {
     return r.db.WithContext(ctx).Delete(&models.FormAturanRisiko{}, id).Error
-}
-
-type pemeriksaanRepository struct {
-    db *gorm.DB
-}
-
-func NewPemeriksaanRepository(db *gorm.DB) PemeriksaanRepository {
-    return &pemeriksaanRepository{db: db}
-}
-
-func (r *pemeriksaanRepository) CreatePemeriksaan(ctx context.Context, p *models.Pemeriksaan) error {
-    return r.db.WithContext(ctx).Create(p).Error
-}
-
-func (r *pemeriksaanRepository) GetRiwayatByPenduduk(ctx context.Context, pendudukID uint, kelompok string) ([]models.Pemeriksaan, error) {
-    var list []models.Pemeriksaan
-    query := r.db.WithContext(ctx).Where("penduduk_id = ?", pendudukID)
-    if kelompok != "" {
-        query = query.Where("kelompok = ?", kelompok)
-    }
-    err := query.Order("tanggal_pemeriksaan desc").Find(&list).Error
-    return list, err
-}
-
-func (r *pemeriksaanRepository) GetPemeriksaanByID(ctx context.Context, id uint) (*models.Pemeriksaan, error) {
-    var p models.Pemeriksaan
-    err := r.db.WithContext(ctx).Preload("Penduduk").First(&p, id).Error
-    if errors.Is(err, gorm.ErrRecordNotFound) {
-        return nil, nil
-    }
-    return &p, err
-}
-
-func (r *pemeriksaanRepository) GetPendudukByID(ctx context.Context, id uint) (*models.Kependudukan, error) {
-    var penduduk models.Kependudukan
-    err := r.db.WithContext(ctx).First(&penduduk, id).Error
-    if errors.Is(err, gorm.ErrRecordNotFound) {
-        return nil, nil
-    }
-    return &penduduk, err
-}
-
-func (r *pemeriksaanRepository) GetUserByID(ctx context.Context, id uint) (*models.User, error) {
-    var user models.User
-    err := r.db.WithContext(ctx).First(&user, id).Error
-    if errors.Is(err, gorm.ErrRecordNotFound) {
-        return nil, nil
-    }
-    return &user, err
 }

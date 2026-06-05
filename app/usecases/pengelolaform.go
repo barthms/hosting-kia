@@ -1,17 +1,12 @@
 package usecases
 
 import (
-    "bytes"
-    "context"
-    "encoding/json"
-    "errors"
-    "fmt"
-    "monitoring-service/app/models"
-    "monitoring-service/app/repositories"
-    "strings"
-    "time"
-
-    "github.com/diegoholiveira/jsonlogic/v3"
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"monitoring-service/app/models"
+	"monitoring-service/app/repositories"
 )
 
 // ----------------------------------------------------------------------------
@@ -38,12 +33,7 @@ type FormUsecase interface {
     DeleteRiskRule(ctx context.Context, id uint) error
 }
 
-type PemeriksaanUsecase interface {
-    GetActiveForm(ctx context.Context, kelompok string) (*models.ActiveFormResponse, error)
-    SavePemeriksaan(ctx context.Context, req *models.SavePemeriksaanRequest, petugasID *uint) (*models.PemeriksaanResponse, error)
-    GetRiwayatPenduduk(ctx context.Context, pendudukID uint, kelompok string) ([]models.RiwayatPemeriksaanResponse, error)
-    GetDetailPemeriksaan(ctx context.Context, id uint) (*models.DetailPemeriksaanResponse, error)
-}
+
 
 type formUsecase struct {
     repo repositories.FormRepository
@@ -140,6 +130,7 @@ func (u *formUsecase) DuplicateFormVersion(ctx context.Context, sourceID uint, r
             NamaAturan:     r.NamaAturan,
             Kondisi:        r.Kondisi,
             KategoriRisiko: r.KategoriRisiko,
+             Rekomendasi:    r.Rekomendasi,
             Prioritas:      r.Prioritas,
         }
         if err := u.repo.CreateRiskRule(ctx, &newRule); err != nil {
@@ -306,6 +297,7 @@ func (u *formUsecase) AddRiskRule(ctx context.Context, versiID uint, req *models
         Kondisi:        kondisiJSON,
         KategoriRisiko: req.KategoriRisiko,
         Prioritas:      req.Prioritas,
+        Rekomendasi:    req.Rekomendasi,
     }
     if err := u.repo.CreateRiskRule(ctx, rule); err != nil {
         return nil, err
@@ -335,6 +327,9 @@ func (u *formUsecase) UpdateRiskRule(ctx context.Context, id uint, req *models.U
     if req.KategoriRisiko != "" {
         rule.KategoriRisiko = req.KategoriRisiko
     }
+    if req.Rekomendasi != "" {                 // tambahkan
+        rule.Rekomendasi = req.Rekomendasi
+    }
     if req.Prioritas != 0 {
         rule.Prioritas = req.Prioritas
     }
@@ -348,274 +343,3 @@ func (u *formUsecase) DeleteRiskRule(ctx context.Context, id uint) error {
 // ----------------------------------------------------------------------------
 // PemeriksaanUsecase (implementasi yang diperbaiki)
 // ----------------------------------------------------------------------------
-
-type pemeriksaanUsecase struct {
-    formRepo     repositories.FormRepository
-    periksaRepo  repositories.PemeriksaanRepository
-}
-
-func NewPemeriksaanUsecase(formRepo repositories.FormRepository, periksaRepo repositories.PemeriksaanRepository) PemeriksaanUsecase {
-    return &pemeriksaanUsecase{
-        formRepo:    formRepo,
-        periksaRepo: periksaRepo,
-    }
-}
-
-// evaluateRisk mengevaluasi aturan JSON logic terhadap data jawaban.
-// Mengembalikan kategori risiko pertama yang cocok, atau "Normal" jika tidak ada.
-func (u *pemeriksaanUsecase) evaluateRisk(rules []models.FormAturanRisiko, jawaban map[string]interface{}) (string, error) {
-    // Marshal data jawaban ke JSON sekali untuk digunakan berulang
-    dataJSON, err := json.Marshal(jawaban)
-    if err != nil {
-        return "Normal", err
-    }
-    dataReader := strings.NewReader(string(dataJSON))
-
-    for _, rule := range rules {
-        // Marshal kondisi rule ke JSON
-        kondisiJSON, err := json.Marshal(rule.Kondisi)
-        if err != nil {
-            continue // skip aturan yang tidak valid
-        }
-        logicReader := strings.NewReader(string(kondisiJSON))
-
-        // Buffer untuk hasil evaluasi
-        var resultBuffer bytes.Buffer
-
-        // Apply JSON logic (menggunakan io.Reader/Writer)
-        err = jsonlogic.Apply(logicReader, dataReader, &resultBuffer)
-        if err != nil {
-            continue // gagal evaluasi, lanjut ke aturan berikutnya
-        }
-
-        // Hasil evaluasi adalah JSON boolean, parse
-        var result bool
-        if err := json.Unmarshal(resultBuffer.Bytes(), &result); err != nil {
-            // Jika tidak bisa di-unmarshal ke boolean, coba truthiness
-            var val interface{}
-            if err2 := json.Unmarshal(resultBuffer.Bytes(), &val); err2 == nil {
-                result = isTruthy(val)
-            } else {
-                continue
-            }
-        }
-
-        if result {
-            return rule.KategoriRisiko, nil
-        }
-
-        // Reset dataReader untuk aturan berikutnya (karena sudah terbaca habis)
-        dataReader = strings.NewReader(string(dataJSON))
-    }
-    return "Normal", nil
-}
-
-// isTruthy helper untuk menentukan truthiness dari nilai JSON
-func isTruthy(val interface{}) bool {
-    switch v := val.(type) {
-    case bool:
-        return v
-    case string:
-        return v != ""
-    case float64:
-        return v != 0
-    case []interface{}:
-        return len(v) > 0
-    case map[string]interface{}:
-        return len(v) > 0
-    default:
-        return false
-    }
-}
-
-func (u *pemeriksaanUsecase) GetActiveForm(ctx context.Context, kelompok string) (*models.ActiveFormResponse, error) {
-    versi, err := u.formRepo.GetActiveFormVersion(ctx, kelompok)
-    if err != nil || versi == nil {
-        return nil, errors.New("no active form for this kelompok")
-    }
-    questions, err := u.formRepo.GetQuestionsByVersion(ctx, versi.ID)
-    if err != nil {
-        return nil, err
-    }
-    qResp := make([]models.QuestionResponse, len(questions))
-    for i, q := range questions {
-        var opsi []string
-        json.Unmarshal(q.Opsi, &opsi)
-        var validasi map[string]interface{}
-        json.Unmarshal(q.AturanValidasi, &validasi)
-        qResp[i] = models.QuestionResponse{
-            ID:             q.ID,
-            FormVersiID:    q.FormVersiID,
-            Key:            q.Key,
-            Label:          q.Label,
-            Tipe:           q.Tipe,
-            Opsi:           opsi,
-            Satuan:         q.Satuan,
-            Wajib:          q.Wajib,
-            AturanValidasi: validasi,
-            Urutan:         q.Urutan,
-        }
-    }
-    return &models.ActiveFormResponse{
-        Versi: models.FormVersionResponse{
-            ID:         versi.ID,
-            Kelompok:   versi.Kelompok,
-            Tahun:      versi.Tahun,
-            Nama:       versi.Nama,
-            Aktif:      versi.Aktif,
-            Keterangan: versi.Keterangan,
-        },
-        Pertanyaan: qResp,
-    }, nil
-}
-
-func (u *pemeriksaanUsecase) SavePemeriksaan(ctx context.Context, req *models.SavePemeriksaanRequest, petugasID *uint) (*models.PemeriksaanResponse, error) {
-    // 1. Get active version
-    versi, err := u.formRepo.GetActiveFormVersion(ctx, req.Kelompok)
-    if err != nil || versi == nil {
-        return nil, errors.New("no active form for kelompok " + req.Kelompok)
-    }
-    // 2. Parse date
-    tgl, err := time.Parse("2006-01-02", req.Tanggal)
-    if err != nil {
-        return nil, errors.New("invalid date format, use YYYY-MM-DD")
-    }
-    // 3. Validate required fields and types based on questions
-    questions, err := u.formRepo.GetQuestionsByVersion(ctx, versi.ID)
-    if err != nil {
-        return nil, err
-    }
-    for _, q := range questions {
-        val, exists := req.Data[q.Key]
-        if q.Wajib && !exists {
-            return nil, fmt.Errorf("field '%s' wajib diisi", q.Label)
-        }
-        if exists {
-            switch q.Tipe {
-            case "angka":
-                if _, ok := val.(float64); !ok {
-                    return nil, fmt.Errorf("field '%s' harus angka", q.Label)
-                }
-            case "boolean":
-                if _, ok := val.(bool); !ok {
-                    return nil, fmt.Errorf("field '%s' harus boolean", q.Label)
-                }
-            case "pilihan":
-                var opsiList []string
-                json.Unmarshal(q.Opsi, &opsiList)
-                found := false
-                for _, opt := range opsiList {
-                    if fmt.Sprintf("%v", val) == opt {
-                        found = true
-                        break
-                    }
-                }
-                if !found {
-                    return nil, fmt.Errorf("nilai '%s' tidak valid untuk field '%s'", val, q.Label)
-                }
-            }
-        }
-    }
-    // 4. Calculate derived values (e.g., IMT)
-    jawaban := req.Data
-    if berat, ok := jawaban["berat_badan"].(float64); ok {
-        if tinggi, ok := jawaban["tinggi_badan"].(float64); ok && tinggi > 0 {
-            imt := berat / ((tinggi / 100) * (tinggi / 100))
-            jawaban["imt"] = imt
-        }
-    }
-    // 5. Evaluate risk rules (menggunakan helper)
-    kategoriRisiko := "Normal"
-    rules, err := u.formRepo.GetRiskRulesByVersion(ctx, versi.ID)
-    if err != nil {
-        // Jika gagal mengambil aturan, tetap lanjut dengan default
-        kategoriRisiko = "Normal"
-    } else {
-        kategori, err := u.evaluateRisk(rules, jawaban)
-        if err != nil {
-            kategoriRisiko = "Normal"
-        } else {
-            kategoriRisiko = kategori
-        }
-    }
-    // 6. Save
-    jawabanJSON, _ := json.Marshal(jawaban)
-    pemeriksaan := &models.Pemeriksaan{
-        PendudukID:         req.PendudukID,
-        Kelompok:           req.Kelompok,
-        TanggalPemeriksaan: tgl,
-        FormVersiID:        versi.ID,
-        Jawaban:            jawabanJSON,
-        KategoriRisiko:     kategoriRisiko,
-        PetugasID:          petugasID,
-    }
-    if err := u.periksaRepo.CreatePemeriksaan(ctx, pemeriksaan); err != nil {
-        return nil, err
-    }
-    return &models.PemeriksaanResponse{
-        ID:                 pemeriksaan.ID,
-        PendudukID:         pemeriksaan.PendudukID,
-        Kelompok:           pemeriksaan.Kelompok,
-        TanggalPemeriksaan: pemeriksaan.TanggalPemeriksaan,
-        FormVersiID:        pemeriksaan.FormVersiID,
-        KategoriRisiko:     pemeriksaan.KategoriRisiko,
-        PetugasID:          pemeriksaan.PetugasID,
-        CreatedAt:          pemeriksaan.CreatedAt,
-    }, nil
-}
-
-func (u *pemeriksaanUsecase) GetRiwayatPenduduk(ctx context.Context, pendudukID uint, kelompok string) ([]models.RiwayatPemeriksaanResponse, error) {
-    list, err := u.periksaRepo.GetRiwayatByPenduduk(ctx, pendudukID, kelompok)
-    if err != nil {
-        return nil, err
-    }
-    res := make([]models.RiwayatPemeriksaanResponse, len(list))
-    for i, p := range list {
-        res[i] = models.RiwayatPemeriksaanResponse{
-            ID:                 p.ID,
-            TanggalPemeriksaan: p.TanggalPemeriksaan,
-            Kelompok:           p.Kelompok,
-            KategoriRisiko:     p.KategoriRisiko,
-        }
-    }
-    return res, nil
-}
-
-func (u *pemeriksaanUsecase) GetDetailPemeriksaan(ctx context.Context, id uint) (*models.DetailPemeriksaanResponse, error) {
-    p, err := u.periksaRepo.GetPemeriksaanByID(ctx, id)
-    if err != nil || p == nil {
-        return nil, errors.New("pemeriksaan not found")
-    }
-    penduduk, _ := u.periksaRepo.GetPendudukByID(ctx, p.PendudukID)
-    var namaPenduduk string
-    if penduduk != nil {
-        namaPenduduk = penduduk.NamaLengkap
-    }
-    // var petugasNama string
-    // if p.PetugasID != nil {
-    //     user, _ := u.periksaRepo.GetUserByID(ctx, *p.PetugasID)
-    //     if user != nil {
-    //         petugasNama = user.Nama
-    //     }
-    // }
-    // Get version info
-    versi, _ := u.formRepo.GetFormVersionByID(ctx, p.FormVersiID)
-    namaVersi := ""
-    if versi != nil {
-        namaVersi = versi.Nama
-    }
-    // Parse jawaban
-    var jawabanMap map[string]interface{}
-    json.Unmarshal(p.Jawaban, &jawabanMap)
-    return &models.DetailPemeriksaanResponse{
-        ID:                 p.ID,
-        PendudukID:         p.PendudukID,
-        NamaPenduduk:       namaPenduduk,
-        Kelompok:           p.Kelompok,
-        TanggalPemeriksaan: p.TanggalPemeriksaan,
-        VersiForm:          namaVersi,
-        KategoriRisiko:     p.KategoriRisiko,
-        Jawaban:            jawabanMap,
-        // PetugasNama:        petugasNama,
-    }, nil
-}

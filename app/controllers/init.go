@@ -238,15 +238,13 @@ func Init(opts Options) *Main {
 	m.PemeriksaanDewasa = NewPemeriksaanDewasaController(opts.UseCases.PemeriksaanDewasa, opts.UseCases.Kependudukan)
 	m.PemeriksaanLansia = NewPemeriksaanLansiaController(opts.UseCases.PemeriksaanLansia, opts.UseCases.Kependudukan)
 	// Buat DashboardUsecase dari usecase yang sudah tersedia
-	dashboardUsecase := usecases.NewDashboardUsecase(
+	// Buat repository pemeriksaan terpusat
+dashboardUsecase := usecases.NewDashboardUsecase(
 		opts.UseCases.Kependudukan,
-		opts.UseCases.PemeriksaanAnak,
-		opts.UseCases.PemeriksaanRemaja,
-		opts.UseCases.PemeriksaanDewasa,
-		opts.UseCases.PemeriksaanLansia,
+		opts.UseCases.Pemeriksaan,
 	)
 
-	// Inject ke controller
+	// Inject ke controller	
 	m.Dashboard = NewDashboardController(dashboardUsecase)
 	m.PendudukRisk = NewPendudukRiskController(opts.UseCases.PendudukRisk)
 	m.RiwayatCard = NewRiwayatCardController(opts.UseCases.RiwayatCard)

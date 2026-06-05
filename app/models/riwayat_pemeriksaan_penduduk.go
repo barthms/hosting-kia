@@ -17,21 +17,21 @@ type DataDiriResponse struct {
 
 // Card riwayat pemeriksaan
 type RiwayatCard struct {
-    ID                 int32     `json:"id"`
-    Kategori           string    `json:"kategori"` // Anak, Remaja, Dewasa, Lansia
+    ID                 uint      `json:"id"`
+    Kategori           string    `json:"kategori"`
     TanggalPemeriksaan time.Time `json:"tanggal_pemeriksaan"`
     IMT                *float64  `json:"imt,omitempty"`
     StatusGizi         string    `json:"status_gizi,omitempty"`
     KategoriRisiko     string    `json:"kategori_risiko"`
     CatatanKhusus      string    `json:"catatan_khusus,omitempty"`
-    // Tambahan field lain jika diperlukan
-    BeratBadan  *float64 `json:"berat_badan,omitempty"`
-    TinggiBadan *float64 `json:"tinggi_badan,omitempty"`
-    TekananDarah string  `json:"tekanan_darah,omitempty"`
-    GulaDarah    float64 `json:"gula_darah,omitempty"`
-    Kolesterol   float64 `json:"kolesterol,omitempty"`
-	StatusKemandirian string  `json:"status_kemandirian,omitempty"`
-	PenyakitKronis    string  `json:"penyakit_kronis,omitempty"`
+    BeratBadan         *float64  `json:"berat_badan,omitempty"`
+    TinggiBadan        *float64  `json:"tinggi_badan,omitempty"`
+    TekananDarah       string    `json:"tekanan_darah,omitempty"`
+    GulaDarah          float64   `json:"gula_darah,omitempty"`
+    Kolesterol         float64   `json:"kolesterol,omitempty"`
+    PenyakitKronis     string    `json:"penyakit_kronis,omitempty"`
+    StatusKemandirian  string    `json:"status_kemandirian,omitempty"`
+    Rekomendasi        string    `json:"rekomendasi,omitempty"` // field ini penting
 }
 
 // Response lengkap

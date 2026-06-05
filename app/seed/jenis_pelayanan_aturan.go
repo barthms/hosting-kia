@@ -7,69 +7,84 @@ import (
 	"gorm.io/gorm"
 )
 
-func SeederAturanPelayanan(db *gorm.DB)(map[string]int32, error) {
+func SeederAturanPelayanan(db *gorm.DB, pelayanan map[string]int32) (map[string]int32, error) {
 	log.Println("🌱 Seed: aturan pelayanan...")
 
 	result := make(map[string]int32)
 
-	data := []models.AturanPelayanan{
+	type tempAturan struct {
+		PelayananNama string
+		UmurMinBulan  int
+		UmurMaxBulan  int
+		Bulan         int
+	}
 
+	dataRaw := []tempAturan{
 		// =========================
 		// VITAMIN A BIRU (6–11 bulan)
 		// =========================
-		{JenisPelayananID: 30, UmurMinBulan: 6, UmurMaxBulan: 11, Bulan: 2},
-		{JenisPelayananID: 30, UmurMinBulan: 6, UmurMaxBulan: 11, Bulan: 8},
+		{PelayananNama: "VIT A KAPSUL BIRU(100.000 IU)", UmurMinBulan: 6, UmurMaxBulan: 11, Bulan: 2},
+		{PelayananNama: "VIT A KAPSUL BIRU(100.000 IU)", UmurMinBulan: 6, UmurMaxBulan: 11, Bulan: 8},
 
 		// =========================
 		// VITAMIN A MERAH (12–59 bulan)
 		// =========================
-		{JenisPelayananID: 31, UmurMinBulan: 12, UmurMaxBulan: 59, Bulan: 2},
-		{JenisPelayananID: 31, UmurMinBulan: 12, UmurMaxBulan: 59, Bulan: 8},
+		{PelayananNama: "VIT A KAPSUL MERAH(200.000 IU)", UmurMinBulan: 12, UmurMaxBulan: 59, Bulan: 2},
+		{PelayananNama: "VIT A KAPSUL MERAH(200.000 IU)", UmurMinBulan: 12, UmurMaxBulan: 59, Bulan: 8},
 
 		// =========================
 		// OBAT CACING (12–59 bulan)
 		// =========================
-		{JenisPelayananID: 16, UmurMinBulan: 12, UmurMaxBulan: 59,},
-
+		{PelayananNama: "Obat Cacing", UmurMinBulan: 12, UmurMaxBulan: 59, Bulan: 0},
 
 		// imunisasi
-		{JenisPelayananID: 32, UmurMinBulan: 0, UmurMaxBulan: 1, Bulan:0},
-		{JenisPelayananID: 33, UmurMinBulan: 0, UmurMaxBulan: 11,Bulan:1},
-		{JenisPelayananID: 34, UmurMinBulan: 0, UmurMaxBulan: 11, Bulan: 1},
-		{JenisPelayananID: 35, UmurMinBulan: 2, UmurMaxBulan: 11, Bulan: 2},
-		{JenisPelayananID: 36, UmurMinBulan: 2, UmurMaxBulan: 11, Bulan: 2},
-		{JenisPelayananID: 37, UmurMinBulan: 2, UmurMaxBulan: 6,Bulan: 2},
-		{JenisPelayananID: 38, UmurMinBulan: 2, UmurMaxBulan: 11,Bulan: 2},
-		{JenisPelayananID: 39, UmurMinBulan: 3, UmurMaxBulan: 11, Bulan: 3},
-		{JenisPelayananID: 40, UmurMinBulan: 3, UmurMaxBulan: 11, Bulan: 3},
-		{JenisPelayananID: 41, UmurMinBulan: 3, UmurMaxBulan: 6,Bulan: 3},
-		{JenisPelayananID: 42, UmurMinBulan: 3, UmurMaxBulan: 11,Bulan: 3},
-		{JenisPelayananID: 43, UmurMinBulan: 4, UmurMaxBulan: 11, Bulan: 4},
-		{JenisPelayananID: 44, UmurMinBulan: 4, UmurMaxBulan: 11, Bulan: 4},
-		{JenisPelayananID: 45, UmurMinBulan: 4, UmurMaxBulan: 11,Bulan: 4},
-		{JenisPelayananID: 46, UmurMinBulan: 4, UmurMaxBulan: 6,Bulan: 4},
-		{JenisPelayananID: 47, UmurMinBulan: 9, UmurMaxBulan: 11, Bulan: 9},
-		{JenisPelayananID: 49, UmurMinBulan: 9, UmurMaxBulan: 11, Bulan: 9},
-		{JenisPelayananID: 48, UmurMinBulan: 10, UmurMaxBulan: 10, Bulan: 10},
-		{JenisPelayananID: 50, UmurMinBulan: 12, UmurMaxBulan: 10,Bulan: 12},
-		{JenisPelayananID: 51, UmurMinBulan: 18, UmurMaxBulan: 23, Bulan: 18},
-		{JenisPelayananID: 52, UmurMinBulan: 18, UmurMaxBulan: 23, Bulan: 18},
-
+		{PelayananNama: "Hepatitis B (<24 Jam)", UmurMinBulan: 0, UmurMaxBulan: 1, Bulan: 0},
+		{PelayananNama: "BCG", UmurMinBulan: 0, UmurMaxBulan: 11, Bulan: 1},
+		{PelayananNama: "Polio tetes 1", UmurMinBulan: 0, UmurMaxBulan: 11, Bulan: 1},
+		{PelayananNama: "DPT-HB-Hib 1", UmurMinBulan: 2, UmurMaxBulan: 11, Bulan: 2},
+		{PelayananNama: "Polio tetes 2", UmurMinBulan: 2, UmurMaxBulan: 11, Bulan: 2},
+		{PelayananNama: "Rotavirus (RV)1", UmurMinBulan: 2, UmurMaxBulan: 6, Bulan: 2},
+		{PelayananNama: "PCV 1", UmurMinBulan: 2, UmurMaxBulan: 11, Bulan: 2},
+		{PelayananNama: "DPT-HB-Hib 2", UmurMinBulan: 3, UmurMaxBulan: 11, Bulan: 3},
+		{PelayananNama: "Polio tetes 3", UmurMinBulan: 3, UmurMaxBulan: 11, Bulan: 3},
+		{PelayananNama: "Rotavirus (RV)2", UmurMinBulan: 3, UmurMaxBulan: 6, Bulan: 3},
+		{PelayananNama: "PCV 2", UmurMinBulan: 3, UmurMaxBulan: 11, Bulan: 3},
+		{PelayananNama: "DPT-HB-Hib 3", UmurMinBulan: 4, UmurMaxBulan: 11, Bulan: 4},
+		{PelayananNama: "Polio tetes 4", UmurMinBulan: 4, UmurMaxBulan: 11, Bulan: 4},
+		{PelayananNama: "Polio Suntik (IPV) 1", UmurMinBulan: 4, UmurMaxBulan: 11, Bulan: 4},
+		{PelayananNama: "Rotavirus (RV) 3", UmurMinBulan: 4, UmurMaxBulan: 6, Bulan: 4},
+		{PelayananNama: "Campak -Rubella (MR)", UmurMinBulan: 9, UmurMaxBulan: 11, Bulan: 9},
+		{PelayananNama: "Polio Suntik (IPV) 2", UmurMinBulan: 9, UmurMaxBulan: 11, Bulan: 9},
+		{PelayananNama: "Japanese Encephalitis (JE)", UmurMinBulan: 10, UmurMaxBulan: 10, Bulan: 10},
+		{PelayananNama: "PCV3", UmurMinBulan: 12, UmurMaxBulan: 10, Bulan: 12},
+		{PelayananNama: "DPT-HB-Hib Lanjutan", UmurMinBulan: 18, UmurMaxBulan: 23, Bulan: 18},
+		{PelayananNama: "Campak Rubella (MR) Lanjutan", UmurMinBulan: 18, UmurMaxBulan: 23, Bulan: 18},
 	}
 
-	for _, item := range data {
+	for _, item := range dataRaw {
+		pID, ok := pelayanan[item.PelayananNama]
+		if !ok {
+			log.Printf("⚠️ Pelayanan '%s' tidak ditemukan untuk aturan pelayanan", item.PelayananNama)
+			continue
+		}
 
-		// 🔥 biar tidak duplikat
+		aturan := models.AturanPelayanan{
+			JenisPelayananID: pID,
+			UmurMinBulan:     item.UmurMinBulan,
+			UmurMaxBulan:     item.UmurMaxBulan,
+			Bulan:            item.Bulan,
+		}
+
 		err := db.Where(
 			"jenis_pelayanan_id = ? AND umur_min_bulan = ? AND umur_max_bulan = ? AND bulan = ?",
-			item.JenisPelayananID,
-			item.UmurMinBulan,
-			item.UmurMaxBulan,
-			item.Bulan,
-		).FirstOrCreate(&item).Error
+			aturan.JenisPelayananID,
+			aturan.UmurMinBulan,
+			aturan.UmurMaxBulan,
+			aturan.Bulan,
+		).FirstOrCreate(&aturan).Error
 
 		if err != nil {
-			return nil,err
+			return nil, err
 		}
 	}
 

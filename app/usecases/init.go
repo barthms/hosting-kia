@@ -315,13 +315,11 @@ func Init(opts Options) *Main {
 	m.PemeriksaanRemaja = NewPemeriksaanRemajaUsecase(opts.Repository.PemeriksaanRemaja)
 	m.PemeriksaanDewasa = NewPemeriksaanDewasaUsecase(opts.Repository.PemeriksaanDewasa)
 	m.PemeriksaanLansia = NewPemeriksaanLansiaUsecase(opts.Repository.PemeriksaanLansia)
-	m.PendudukRisk = NewPendudukRiskUsecase(opts.Repository.PemeriksaanAnak, opts.Repository.PemeriksaanRemaja, opts.Repository.PemeriksaanDewasa, opts.Repository.PemeriksaanLansia)
+	m.PendudukRisk = NewPendudukRiskUsecase(opts.Repository.Pemeriksaan)
 	m.RiwayatCard = NewRiwayatCardUsecase(
 		opts.Repository.Kependudukan,
-		opts.Repository.PemeriksaanAnak,
-		opts.Repository.PemeriksaanRemaja,
-		opts.Repository.PemeriksaanDewasa,
-		opts.Repository.PemeriksaanLansia,
+		 opts.Repository.Pemeriksaan,
+
 	)
 	m.Pencatatan = NewPencatatanUsecase(
 		opts.Repository.Kependudukan,

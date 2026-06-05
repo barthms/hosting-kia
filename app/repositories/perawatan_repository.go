@@ -1,6 +1,8 @@
 package repositories
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"monitoring-service/app/models"
@@ -222,17 +224,38 @@ func (r *perawatanRepository) GetKategoriCapaianByID(id uint) (*models.KategoriC
 
 // CreateKategoriCapaian creates a new kategori capaian record
 func (r *perawatanRepository) CreateKategoriCapaian(data *models.KategoriCapaian) error {
+	// Sync the sequence first to avoid duplicate key issues in Postgres
+	_ = r.db.Exec("SELECT setval('kategori_capaian_id_seq', COALESCE((SELECT MAX(id) FROM kategori_capaian), 1))").Error
+
 	if err := r.db.Create(data).Error; err != nil {
-		return customerror.NewInternalServiceError("gagal membuat kategori capaian")
+		fmt.Printf("[DEBUG] CreateKategoriCapaian error: %v\n", err)
+		fmt.Printf("[DEBUG] Data: rentang_usia=%q, pertanyaan_ceklist=%q, aspek=%q\n", data.RentangUsia, data.PertanyaaanCeklist, data.Aspek)
+		return customerror.NewInternalServiceError("gagal membuat kategori capaian: " + err.Error())
 	}
+
+	// Link rentang_usia_id if possible
+	var rentang models.RentangUsia
+	rentangName := strings.TrimSpace(data.RentangUsia)
+	if err := r.db.Where("nama_rentang ILIKE ? OR nama_rentang ILIKE ?", "%"+rentangName+"%", "%"+strings.ReplaceAll(rentangName, " Bulan", "")+"%").First(&rentang).Error; err == nil {
+		_ = r.db.Exec("UPDATE kategori_capaian SET rentang_usia_id = ? WHERE id = ?", rentang.ID, data.ID).Error
+	}
+
 	return nil
 }
 
 // UpdateKategoriCapaian updates an existing kategori capaian record
 func (r *perawatanRepository) UpdateKategoriCapaian(data *models.KategoriCapaian) error {
 	if err := r.db.Save(data).Error; err != nil {
-		return customerror.NewInternalServiceError("gagal mengubah kategori capaian")
+		return customerror.NewInternalServiceError("gagal mengubah kategori capaian: " + err.Error())
 	}
+
+	// Link/update rentang_usia_id if possible
+	var rentang models.RentangUsia
+	rentangName := strings.TrimSpace(data.RentangUsia)
+	if err := r.db.Where("nama_rentang ILIKE ? OR nama_rentang ILIKE ?", "%"+rentangName+"%", "%"+strings.ReplaceAll(rentangName, " Bulan", "")+"%").First(&rentang).Error; err == nil {
+		_ = r.db.Exec("UPDATE kategori_capaian SET rentang_usia_id = ? WHERE id = ?", rentang.ID, data.ID).Error
+	}
+
 	return nil
 }
 
