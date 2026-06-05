@@ -34,11 +34,26 @@ func NewConfig() *Config {
 		tenagaRole = "Dokter" // default
 	}
 
+	// Railway menggunakan PORT, bukan APP_PORT
+	servicePort := viper.GetString("APP_PORT")
+	if servicePort == "" {
+		servicePort = viper.GetString("PORT")
+	}
+	if servicePort == "" {
+		servicePort = "8080"
+	}
+
+	// Default host ke 0.0.0.0 untuk production (Railway membutuhkan ini)
+	serviceHost := viper.GetString("APP_HOST")
+	if serviceHost == "" {
+		serviceHost = "0.0.0.0"
+	}
+
 	return &Config{
-		ServiceHost:        viper.GetString("APP_HOST"),
+		ServiceHost:        serviceHost,
 		ServiceEndpointV:   viper.GetString("APP_ENDPOINT_V"),
 		ServiceEnvironment: viper.GetString("APP_ENVIRONMENT"),
-		ServicePort:        viper.GetString("APP_PORT"),
+		ServicePort:        servicePort,
 		JWTSecret:          jwtSecret,
 		JWTAccessTokenMins: jwtAccessTokenMins,
 		Database:           LoadDatabaseConfig(),

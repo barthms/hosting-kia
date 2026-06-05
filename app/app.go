@@ -76,11 +76,15 @@ func (m *Main) startCronJob() {
 }
 
 func (m *Main) Init() (err error) {
+	// Coba baca file .env (untuk development lokal)
 	viper.SetConfigFile(".env")
-	err = viper.ReadInConfig()
-	if err != nil {
-		return
+	if readErr := viper.ReadInConfig(); readErr != nil {
+		log.Printf("⚠️ .env file tidak ditemukan, menggunakan environment variables dari sistem: %v", readErr)
 	}
+
+	// PENTING: aktifkan AutomaticEnv agar viper baca OS environment variables (untuk Railway/production)
+	viper.AutomaticEnv()
+
 	m.cfg = config.NewConfig()
 
 	e := echo.New()
